@@ -1,0 +1,158 @@
+/* Logo glow effect */
+.logo-container img {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+  transition: filter 0.3s ease;
+}
+
+.logo-container:hover img {
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+}
+
+/* Category cards hover effects */
+.category-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.category-card.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.category-card.active .category-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Product cards */
+.product-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+/* Button animations */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Search input focus effect */
+#searchInput:focus {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Modal animations */
+.modal-enter {
+  animation: modalEnter 0.3s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Status badges */
+.status-active {
+  background-color: #10b981;
+  color: white;
+}
+
+.status-inactive {
+  background-color: #ef4444;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .category-card {
+    padding: 1rem;
+  }
+
+  .product-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Loading spinner */
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Table styles */
+.admin-table {
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  text-align: left;
+}
+
+.admin-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.admin-table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.admin-table tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
