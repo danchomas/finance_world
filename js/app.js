@@ -224,10 +224,13 @@ function renderProducts() {
 // Get category name by ID
 function getCategoryName(categoryId) {
   const category = categories.find(cat => cat.id === categoryId);
-  return category ? category.name : "Неизвестно";
+  return category 
+    ? JSON.stringify(category.name)  // Сохраняет \n как "\\n" 
+    : "Неизвестно";
 }
 
-// Show product details modal
+let scrollPosition = 0;
+
 function showProductDetails(product) {
   const modal = document.getElementById("productModal");
   const title = document.getElementById("productModalTitle");
@@ -235,26 +238,34 @@ function showProductDetails(product) {
   
   if (!modal || !title || !content) return;
 
+  // Запоминаем текущую позицию скролла
+  scrollPosition = window.scrollY;
+  
+  // Блокируем скролл
+  document.body.classList.add("body-no-scroll");
+  document.body.style.top = `-${scrollPosition}px`; // Компенсируем сдвиг
+
+  // Остальной код модалки...
   title.textContent = product.name;
   content.innerHTML = `
-    <div class="space-y-4">
-      <div>
+    <div class="space-y-4" style="max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px;">
+      <div style="word-break: break-word;">
         <h4 class="font-semibold text-gray-900 mb-2">Банк</h4>
         <p class="text-gray-700">${product.bank}</p>
       </div>
-      <div>
+      <div style="word-break: break-word;">
         <h4 class="font-semibold text-gray-900 mb-2">Категория</h4>
         <p class="text-gray-700">${getCategoryName(product.category)}</p>
       </div>
-      <div>
+      <div style="word-break: break-word;">
         <h4 class="font-semibold text-gray-900 mb-2">Описание</h4>
-        <p class="text-gray-700">${product.description}</p>
+        <p class="text-gray-700" style="white-space: pre-line">${product.description}</p>
       </div>
-      <div>
+      <div style="word-break: break-word;">
         <h4 class="font-semibold text-gray-900 mb-2">Условия</h4>
-        <p class="text-gray-700">${product.conditions}</p>
+        <p class="text-gray-700" style="white-space: pre-line">${product.conditions}</p>
       </div>
-      <div class="pt-4 border-t">
+      <div class="pt-4 border-t" style="position: sticky; bottom: 0; background: white; padding-top: 16px;">
         <button onclick="window.open('${product.url}', '_blank')" 
                 class="btn-primary w-full text-white py-3 rounded-lg font-semibold">
           Подать заявку на сайте банка
@@ -265,6 +276,26 @@ function showProductDetails(product) {
 
   modal.classList.remove("hidden");
 }
+
+const closeProductModal = document.getElementById("closeProductModal");
+if (closeProductModal) {
+  closeProductModal.addEventListener("click", () => {
+    const modal = document.getElementById("productModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      
+      // Разрешаем скролл
+      document.body.classList.remove("body-no-scroll");
+      
+      // Восстанавливаем позицию скролла
+      window.scrollTo(0, scrollPosition);
+      
+      // Убираем временный стиль
+      document.body.style.top = "";
+    }
+  });
+}
+
 
 // Search functionality
 function performSearch() {
