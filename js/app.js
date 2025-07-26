@@ -9,6 +9,7 @@ let currentFilter = ""
 let currentSearch = ""
 let isAdminLoggedIn = false
 let editingProductId = null
+let scrollPosition = 0
 
 // Default categories data
 const defaultCategories = [
@@ -259,8 +260,6 @@ function getCategoryName(categoryId) {
   return category ? category.name : "Неизвестно"
 }
 
-let scrollPosition = 0
-
 function showProductDetails(product) {
   const modal = document.getElementById("productModal")
   const title = document.getElementById("productModalTitle")
@@ -303,17 +302,14 @@ function showProductDetails(product) {
   modal.classList.remove("hidden")
 }
 
-const closeProductModal = document.getElementById("closeProductModal")
-if (closeProductModal) {
-  closeProductModal.addEventListener("click", () => {
-    const modal = document.getElementById("productModal")
-    if (modal) {
-      modal.classList.add("hidden")
-      document.body.classList.remove("body-no-scroll")
-      window.scrollTo(0, scrollPosition)
-      document.body.style.top = ""
-    }
-  })
+function closeProductModal() {
+  const modal = document.getElementById("productModal")
+  if (modal) {
+    modal.classList.add("hidden")
+    document.body.classList.remove("body-no-scroll")
+    window.scrollTo(0, scrollPosition)
+    document.body.style.top = ""
+  }
 }
 
 // Search functionality
@@ -327,6 +323,10 @@ function performSearch() {
 function showAdminModal() {
   const modal = document.getElementById("adminModal")
   if (!modal) return
+
+  scrollPosition = window.scrollY
+  document.body.classList.add("body-no-scroll")
+  document.body.style.top = `-${scrollPosition}px`
 
   modal.classList.remove("hidden")
 
@@ -436,6 +436,10 @@ function showProductForm(productId = null) {
   const deleteBtn = document.getElementById("deleteProductBtn")
 
   if (!modal || !title || !deleteBtn) return
+
+  scrollPosition = window.scrollY
+  document.body.classList.add("body-no-scroll")
+  document.body.style.top = `-${scrollPosition}px`
 
   editingProductId = productId
 
@@ -581,7 +585,12 @@ async function deleteProductFromSupabase() {
 
 function closeProductFormModal() {
   const modal = document.getElementById("productFormModal")
-  if (modal) modal.classList.add("hidden")
+  if (modal) {
+    modal.classList.add("hidden")
+    document.body.classList.remove("body-no-scroll")
+    window.scrollTo(0, scrollPosition)
+    document.body.style.top = ""
+  }
   editingProductId = null
 }
 
@@ -618,13 +627,23 @@ function bindEvents() {
   if (closeAdminModal) {
     closeAdminModal.addEventListener("click", () => {
       const modal = document.getElementById("adminModal")
-      if (modal) modal.classList.add("hidden")
+      if (modal) {
+        modal.classList.add("hidden")
+        document.body.classList.remove("body-no-scroll")
+        window.scrollTo(0, scrollPosition)
+        document.body.style.top = ""
+      }
     })
   }
 
-  const closeProductFormModal = document.getElementById("closeProductFormModal")
-  if (closeProductFormModal) {
-    closeProductFormModal.addEventListener("click", closeProductFormModal)
+  const closeProductModalBtn = document.getElementById("closeProductModal")
+  if (closeProductModalBtn) {
+    closeProductModalBtn.addEventListener("click", closeProductModal) // Теперь вызывается функция closeProductModal
+  }
+
+  const closeProductFormModalBtn = document.getElementById("closeProductFormModal")
+  if (closeProductFormModalBtn) {
+    closeProductFormModalBtn.addEventListener("click", closeProductFormModal)
   }
 
   const addProductBtn = document.getElementById("addProductBtn")
@@ -649,6 +668,9 @@ function bindEvents() {
     adminModal.addEventListener("click", (e) => {
       if (e.target.id === "adminModal") {
         adminModal.classList.add("hidden")
+        document.body.classList.remove("body-no-scroll")
+        window.scrollTo(0, scrollPosition)
+        document.body.style.top = ""
       }
     })
   }
@@ -657,7 +679,7 @@ function bindEvents() {
   if (productModal) {
     productModal.addEventListener("click", (e) => {
       if (e.target.id === "productModal") {
-        productModal.classList.add("hidden")
+        closeProductModal()
       }
     })
   }
@@ -675,3 +697,4 @@ function bindEvents() {
 // Make functions globally available for inline handlers
 window.editProduct = editProduct
 window.toggleProductStatus = toggleProductStatus
+window.closeProductModal = closeProductModal
