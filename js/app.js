@@ -2,7 +2,6 @@ const supabaseUrl = "https://bvqeefvruwuwsctapbko.supabase.co"
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cWVlZnZydXd1d3NjdGFwYmtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDM3NjEsImV4cCI6MjA2ODE3OTc2MX0.vu0yuQdeJ9oEx7PjneUxchVC2UBAVcMM56JqTuxrfXw"
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
-// Application state
 let products = []
 let categories = []
 let currentFilter = ""
@@ -11,7 +10,6 @@ let isAdminLoggedIn = false
 let editingProductId = null
 let scrollPosition = 0
 
-// Default categories data
 const defaultCategories = [
   { id: "debit", name: "Дебетовые карты", icon: "💳" },
   { id: "credit", name: "Кредитные карты", icon: "💰" },
@@ -23,7 +21,6 @@ const defaultCategories = [
   { id: "rko", name: "РКО", icon: "🏦" },
 ]
 
-// Функция для загрузки изображения в Supabase Storage
 async function uploadProductImage(file, productId) {
   if (!file) return null
 
