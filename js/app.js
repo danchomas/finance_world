@@ -36,7 +36,6 @@ async function uploadProductImage(file, productId) {
 
     if (error) throw error
 
-    // Получаем публичный URL
     const {
       data: { publicUrl },
     } = supabase.storage.from("product-images").getPublicUrl(filePath)
