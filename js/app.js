@@ -17,7 +17,7 @@ const defaultCategories = [
   { id: "investments", name: "Инвестиции", icon: "📈" },
   { id: "crypto", name: "Криптовалюта", icon: "₿" },
   { id: "sim", name: "SIM карты", icon: "📱" },
-  { id: "ip", name: "Для ИП", icon: "🏢" },
+  { id: "buiseness", name: "Регистрация бизнеса", icon: "🏢" },
   { id: "rko", name: "РКО", icon: "🏦" },
 ]
 
@@ -151,7 +151,7 @@ function getCategoryIcon(categoryId) {
     investments: "📈",
     crypto: "₿",
     sim: "📱",
-    ip: "🏢",
+    buiseness: "🏢",
     rko: "🏦",
   }
   return icons[categoryId] || "📋"
