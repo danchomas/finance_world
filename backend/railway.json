@@ -1,12 +1,17 @@
 {
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt"
+  "name": "finance-world-backend",
+  "version": "1.0.0",
+  "description": "Python FastAPI backend",
+  "scripts": {
+    "start": "uvicorn main:app --host 0.0.0.0 --port $PORT"
   },
-  "deploy": {
-    "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+  "engines": {
+    "python": "3.11.x"
+  },
+  "railway": {
+    "build": {
+      "builder": "NIXPACKS"
+    },
+    "run": "uvicorn main:app --host 0.0.0.0 --port $PORT"
   }
 }
