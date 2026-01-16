@@ -26,5 +26,5 @@ RUN mkdir -p /tmp/uploads/product_images
 # Открываем порт
 EXPOSE 8000
 
-# Запускаем приложение (Railway будет передавать PORT через env)
-CMD ["python", "main.py"]
+# Используем uvicorn напрямую (без gunicorn)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -543,8 +543,22 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+    
+    # Получаем порт из переменной окружения
+    port_str = os.getenv("PORT")
+    if port_str is None:
+        port = 8000
+        print("⚠️  PORT не установлен, используем 8000")
+    else:
+        try:
+            port = int(port_str)
+        except ValueError:
+            print(f"⚠️  Некорректный PORT: {port_str}, используем 8000")
+            port = 8000
+    
     print(f"🚀 Запуск сервера на порту {port}")
+    print(f"🌐 API будет доступен по: http://0.0.0.0:{port}")
+    
     uvicorn.run(
         app,
         host="0.0.0.0",
