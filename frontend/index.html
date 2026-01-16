@@ -131,9 +131,28 @@
             height: 100%;
             object-fit: cover;
         }
+        
+        /* Отладочная панель */
+        #debugPanel {
+            display: none;
+        }
+        
+        /* Для отображения */
+        body.debug #debugPanel {
+            display: block;
+        }
     </style>
 </head>
 <body class="font-inter bg-gray-50 min-h-screen">
+    <!-- Отладочная панель (Ctrl+D для включения) -->
+    <div id="debugPanel" class="fixed top-20 right-4 bg-gray-800 text-white p-3 rounded-lg text-xs z-50 hidden">
+        <div class="font-bold mb-2">Отладка</div>
+        <div>API: <span id="debugApiUrl" class="font-mono">-</span></div>
+        <div>Категории: <span id="debugCategoriesCount" class="font-mono">0</span></div>
+        <div>Продукты: <span id="debugProductsCount" class="font-mono">0</span></div>
+        <div class="mt-2 text-gray-400 text-xs">Ctrl+D для скрытия</div>
+    </div>
+
     <!-- Header -->
     <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white sticky top-0 z-30">
         <div class="px-4 py-3">
@@ -193,7 +212,7 @@
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20">
         <div class="flex justify-around items-center h-14">
-            <button class="flex flex-col items-center justify-center w-full h-full active:bg-gray-100">
+            <button onclick="window.location.reload()" class="flex flex-col items-center justify-center w-full h-full active:bg-gray-100">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
@@ -395,8 +414,82 @@
         </div>
     </div>
 
+    <!-- Конфигурация API -->
     <script>
-        const API_BASE_URL = 'http://localhost:8000';
+        // config.js - автоматическое определение окружения
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            console.log(`🌐 Текущий хост: ${hostname}, протокол: ${protocol}`);
+            
+            // Локальная разработка
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                console.log('🔧 Локальная разработка - используем localhost:8000');
+                return 'http://localhost:8000';
+            }
+            
+            // Продакшен на поддомене api
+            if (hostname === 'api.finance-world.online') {
+                console.log('🚀 Продакшен API - используем текущий хост');
+                return `${protocol}//${hostname}`;
+            }
+            
+            // Основной продакшен домен
+            if (hostname === 'finance-world.online' || hostname.includes('finance-world.online')) {
+                console.log('🌐 Продакшен - используем api.finance-world.online');
+                return 'https://api.finance-world.online';
+            }
+            
+            // Cloudflare Pages (тестовый домен)
+            if (hostname.includes('pages.dev')) {
+                console.log('☁️ Cloudflare Pages - используем Railway URL');
+                // Вставьте ваш Railway URL здесь
+                return 'https://finance-world-backend.up.railway.app';
+            }
+            
+            // Если открыто как файл (file://)
+            if (protocol === 'file:') {
+                console.log('📁 Файловый протокол - используем localhost:8000');
+                return 'http://localhost:8000';
+            }
+            
+            // По умолчанию для локальной разработки
+            console.log('⚡ По умолчанию - используем localhost:8000');
+            return 'http://localhost:8000';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'Мир Финансов',
+            VERSION: '1.0.0',
+            
+            // Функция для проверки доступности API
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ API доступен:', data);
+                        return true;
+                    }
+                    console.warn('⚠️ API не отвечает:', response.status);
+                    return false;
+                } catch (error) {
+                    console.error('❌ Ошибка подключения к API:', error);
+                    return false;
+                }
+            }
+        };
+
+        // Экспортируем конфиг
+        window.CONFIG = CONFIG;
+        console.log('⚙️ Конфигурация загружена:', CONFIG);
+    </script>
+
+    <!-- Основной JavaScript -->
+    <script>
+        // Глобальные переменные
         let products = [];
         let categories = [];
         let currentCategory = 'all';
@@ -431,54 +524,95 @@
             unlockScroll();
         }
 
-        // Функция для эскейпинга HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // Обновить отладочную информацию
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
         }
 
         // Загрузка категорий
         async function loadCategories() {
+            console.log('📥 Загрузка категорий...');
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/categories`);
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                console.log('📊 Ответ от сервера:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 categories = await response.json();
+                console.log('✅ Категории загружены:', categories);
+                
+                // Обновляем отладочную информацию
+                updateDebugInfo();
+                
+                // Рендерим категории
                 renderCategoryButtons();
+                renderCategoriesList();
                 renderCategorySelect();
+                
             } catch (error) {
-                console.error('Ошибка загрузки категорий:', error);
+                console.error('❌ Ошибка загрузки категорий:', error);
+                showErrorMessage('Не удалось загрузить категории. Проверьте подключение к серверу.');
             }
         }
 
         // Загрузка продуктов
         async function loadProducts() {
+            console.log('📥 Загрузка продуктов...');
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/products`);
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                console.log('📊 Ответ от сервера:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 products = await response.json();
+                console.log('✅ Продукты загружены:', products.length, 'шт.');
+                
+                // Обновляем отладочную информацию
+                updateDebugInfo();
+                
+                // Рендерим продукты
                 renderProducts();
+                
                 if (isAdminLoggedIn) {
                     renderAdminProducts();
                 }
+                
             } catch (error) {
-                console.error('Ошибка загрузки продуктов:', error);
+                console.error('❌ Ошибка загрузки продуктов:', error);
+                showErrorMessage('Не удалось загрузить продукты. Проверьте подключение к серверу.');
             }
         }
 
         // Рендер кнопок категорий
         function renderCategoryButtons() {
             const container = document.querySelector('.category-btn').parentNode;
+            if (!container) return;
+            
             // Удаляем все, кроме кнопки "Все"
             const allButton = container.querySelector('[data-category="all"]');
             container.innerHTML = '';
             container.appendChild(allButton);
+            
+            if (!categories || categories.length === 0) {
+                console.warn('⚠️ Нет категорий для отображения');
+                return;
+            }
             
             categories.forEach(category => {
                 const button = document.createElement('button');
                 button.className = 'category-btn px-4 py-2 bg-gray-100 rounded-full whitespace-nowrap active:bg-blue-100 active:text-blue-600';
                 button.dataset.category = category.id;
                 button.innerHTML = `
-                    <span class="mr-2">${escapeHtml(category.icon)}</span>
-                    ${escapeHtml(category.name)}
+                    <span class="mr-2">${category.icon}</span>
+                    ${category.name}
                 `;
                 button.addEventListener('click', () => filterByCategory(category.id));
                 container.appendChild(button);
@@ -491,6 +625,8 @@
         // Рендер списка категорий для модалки
         function renderCategoriesList() {
             const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
             container.innerHTML = `
                 <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
                         class="category-list-item w-full text-left px-4 py-3 rounded-lg active:bg-gray-100 mb-2 ${currentCategory === 'all' ? 'bg-blue-50 text-blue-600' : ''}">
@@ -501,13 +637,15 @@
                 </button>
             `;
             
+            if (!categories || categories.length === 0) return;
+            
             categories.forEach(category => {
                 const button = document.createElement('button');
                 button.className = `category-list-item w-full text-left px-4 py-3 rounded-lg active:bg-gray-100 mb-2 ${currentCategory === category.id ? 'bg-blue-50 text-blue-600' : ''}`;
                 button.innerHTML = `
                     <div class="flex items-center">
-                        <span class="text-lg mr-3">${escapeHtml(category.icon)}</span>
-                        <span class="font-medium">${escapeHtml(category.name)}</span>
+                        <span class="text-lg mr-3">${category.icon}</span>
+                        <span class="font-medium">${category.name}</span>
                     </div>
                 `;
                 button.addEventListener('click', () => {
@@ -521,12 +659,17 @@
         // Рендер категорий для выпадающего списка
         function renderCategorySelect() {
             const select = document.getElementById('productCategory');
+            if (!select) return;
+            
             const currentValue = select.value;
             select.innerHTML = '<option value="">Выберите категорию</option>';
+            
+            if (!categories || categories.length === 0) return;
+            
             categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                option.textContent = escapeHtml(category.name);
+                option.textContent = category.name;
                 if (category.id === currentValue) {
                     option.selected = true;
                 }
@@ -550,17 +693,6 @@
                 btn.classList.toggle('text-blue-600', isActive);
                 btn.classList.toggle('bg-gray-100', !isActive);
             });
-            
-            // Обновляем список в модалке
-            if (document.getElementById('categoriesList')) {
-                document.querySelectorAll('.category-list-item').forEach(item => {
-                    const itemCategory = item.querySelector('span.font-medium').textContent;
-                    const category = categories.find(c => c.name === itemCategory);
-                    const isActive = category ? category.id === currentCategory : currentCategory === 'all';
-                    item.classList.toggle('bg-blue-50', isActive);
-                    item.classList.toggle('text-blue-600', isActive);
-                });
-            }
         }
 
         // Поиск
@@ -602,29 +734,29 @@
                     <div class="flex items-start mb-3">
                         ${product.image_url ? `
                             <div class="product-image-container w-16 h-16 bg-gray-100 flex-shrink-0 mr-3">
-                                <img src="http://localhost:8000${product.image_url}" 
-                                     alt="${escapeHtml(product.name)}"
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" 
+                                     alt="${product.name}"
                                      class="product-image"
                                      onerror="this.onerror=null; this.src='https://via.placeholder.com/64/cccccc/999999?text=Image'">
                             </div>
                         ` : `
                             <div class="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 mr-3 flex items-center justify-center text-2xl">
-                                ${category?.icon ? escapeHtml(category.icon) : '📋'}
+                                ${category?.icon || '📋'}
                             </div>
                         `}
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-900">${escapeHtml(product.name)}</h3>
+                                <h3 class="font-bold text-gray-900">${product.name}</h3>
                                 <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                    ${category ? escapeHtml(category.name) : 'Неизвестно'}
+                                    ${category ? category.name : 'Неизвестно'}
                                 </span>
                             </div>
-                            <p class="text-purple-600 font-medium text-sm mt-1">${escapeHtml(product.bank)}</p>
-                            <p class="text-gray-600 text-sm mt-2 line-clamp-2">${escapeHtml(product.description)}</p>
+                            <p class="text-purple-600 font-medium text-sm mt-1">${product.bank}</p>
+                            <p class="text-gray-600 text-sm mt-2 line-clamp-2">${product.description}</p>
                         </div>
                     </div>
                     <div class="bg-gray-50 rounded-lg p-3 mb-3">
-                        <p class="text-sm text-gray-700">${escapeHtml(product.conditions)}</p>
+                        <p class="text-sm text-gray-700">${product.conditions}</p>
                     </div>
                     <button class="apply-btn w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-medium active:opacity-90">
                         Подать заявку
@@ -646,36 +778,42 @@
         // Показать детали продукта
         function showProductDetails(product) {
             const category = categories.find(c => c.id === product.category);
-            document.getElementById('productModalTitle').textContent = escapeHtml(product.name);
+            document.getElementById('productModalTitle').textContent = product.name;
             
             document.getElementById('productModalContent').innerHTML = `
                 <div class="space-y-4">
-                    <div class="product-image-container bg-gray-100 rounded-lg h-48">
-                        <img src="http://localhost:8000${product.image_url}" 
-                             alt="${escapeHtml(product.name)}"
-                             class="product-image"
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200/cccccc/999999?text=Изображение+продукта'">
-                    </div>
+                    ${product.image_url ? `
+                        <div class="product-image-container bg-gray-100 rounded-lg h-48">
+                            <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" 
+                                 alt="${product.name}"
+                                 class="product-image"
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200/cccccc/999999?text=Изображение+продукта'">
+                        </div>
+                    ` : `
+                        <div class="bg-gray-100 rounded-lg p-8 flex justify-center text-5xl text-gray-400">
+                            ${category?.icon || '📋'}
+                        </div>
+                    `}
                     
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-blue-50 rounded-lg p-3">
                             <p class="text-xs text-gray-500">Банк</p>
-                            <p class="font-medium">${escapeHtml(product.bank)}</p>
+                            <p class="font-medium">${product.bank}</p>
                         </div>
                         <div class="bg-blue-50 rounded-lg p-3">
                             <p class="text-xs text-gray-500">Категория</p>
-                            <p class="font-medium">${category ? escapeHtml(category.name) : 'Неизвестно'}</p>
+                            <p class="font-medium">${category ? category.name : 'Неизвестно'}</p>
                         </div>
                     </div>
                     
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Описание</p>
-                        <p class="text-gray-700 whitespace-pre-line">${escapeHtml(product.description)}</p>
+                        <p class="text-gray-700 whitespace-pre-line">${product.description}</p>
                     </div>
                     
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Условия</p>
-                        <p class="text-gray-700">${escapeHtml(product.conditions)}</p>
+                        <p class="text-gray-700">${product.conditions}</p>
                     </div>
                     
                     <button onclick="window.open('${product.url}', '_blank')"
@@ -701,7 +839,7 @@
                 formData.append('username', 'admin@finance.ru');
                 formData.append('password', password);
                 
-                const response = await fetch(`${API_BASE_URL}/token`, {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/token`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/x-www-form-urlencoded'
@@ -741,11 +879,11 @@
                 item.innerHTML = `
                     <div class="flex items-start">
                         <div class="flex-1">
-                            <h4 class="font-bold text-gray-900">${escapeHtml(product.name)}</h4>
-                            <p class="text-sm text-gray-600">${escapeHtml(product.bank)}</p>
+                            <h4 class="font-bold text-gray-900">${product.name}</h4>
+                            <p class="text-sm text-gray-600">${product.bank}</p>
                             <div class="flex items-center mt-2">
                                 <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full mr-2">
-                                    ${category ? escapeHtml(category.name) : 'Неизвестно'}
+                                    ${category ? category.name : 'Неизвестно'}
                                 </span>
                                 <span class="text-xs ${product.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} px-2 py-1 rounded-full">
                                     ${product.active ? 'Активен' : 'Неактивен'}
@@ -784,7 +922,7 @@
             document.getElementById('productActive').checked = product.active;
             
             if (product.image_url) {
-                document.getElementById('imagePreview').src = `http://localhost:8000${product.image_url}`;
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
             } else {
                 document.getElementById('imagePreviewContainer').classList.add('hidden');
@@ -805,7 +943,7 @@
                     return;
                 }
                 
-                const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
                     method: 'DELETE',
                     headers: { 
                         'Authorization': `Bearer ${adminToken}`
@@ -853,8 +991,8 @@
             
             try {
                 const url = isEdit ? 
-                    `${API_BASE_URL}/products/${productId}` : 
-                    `${API_BASE_URL}/products`;
+                    `${window.CONFIG.API_BASE_URL}/products/${productId}` : 
+                    `${window.CONFIG.API_BASE_URL}/products`;
                 
                 const response = await fetch(url, {
                     method: isEdit ? 'PUT' : 'POST',
@@ -879,12 +1017,45 @@
             }
         }
 
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadCategories();
-            await loadProducts();
+        // Показать сообщение об ошибке
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    ${message}
+                </div>
+            `;
+            document.body.appendChild(errorDiv);
             
-            // Обработчики событий
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        // Инициализация
+        async function initApp() {
+            console.log('🚀 Инициализация приложения...');
+            console.log('🌐 API URL:', window.CONFIG.API_BASE_URL);
+            
+            // Проверяем доступность API
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Сервер недоступен. Проверьте подключение.');
+            }
+        }
+
+        // Привязка событий
+        function bindEvents() {
+            // Поиск
             document.getElementById('searchInput').addEventListener('input', performSearch);
             
             // Кнопка админа
@@ -960,14 +1131,23 @@
                         closeModal(openModals[openModals.length - 1].id);
                     }
                 }
+                
+                // Ctrl+D для отладки
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
             });
-        });
+        }
 
         // Глобальные функции для onclick
         window.closeModal = closeModal;
         window.filterByCategory = filterByCategory;
         window.editProduct = editProduct;
         window.deleteProduct = deleteProduct;
+
+        // Запуск приложения при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
