@@ -541,19 +541,13 @@ async def get_stats(db: Session = Depends(get_db)):
 from fastapi.staticfiles import StaticFiles
 app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 
-# Для локального запуска
 if __name__ == "__main__":
     import uvicorn
-    
     port = int(os.getenv("PORT", 8000))
-    print(f"🚀 Запуск Finance World API на порту {port}")
-    print(f"📚 Документация: http://localhost:{port}/docs")
-    print(f"🔧 CORS настроены для всех доменов")
-    print(f"🌐 Health check: http://localhost:{port}/health")
-    
+    print(f"🚀 Запуск сервера на порту {port}")
     uvicorn.run(
-        "main:app",
+        app,
         host="0.0.0.0",
         port=port,
-        reload=True
+        reload=False
     )
